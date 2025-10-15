@@ -1,16 +1,18 @@
 #!/usr/bin/env bats
 
 load test_helper
-export MAKE=make
-export MAKE_OPTS='-j 2'
-export -n CFLAGS
-export -n CC
-export -n PYTHON_CONFIGURE_OPTS
+_setup() {
+  export MAKE=make
+  export MAKE_OPTS='-j 2'
+  export -n CFLAGS
+  export -n CC
+  export -n PYTHON_CONFIGURE_OPTS
+}
 
 @test "require_gcc on OS X 10.9" {
 
-  for i in {1..3}; do stub uname '-s : echo Darwin'; done
-  for i in {1..2}; do stub sw_vers '-productVersion : echo 10.9.5'; done
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 10.9.5'
 
   stub gcc '--version : echo 4.2.1'
 
@@ -21,7 +23,7 @@ echo MACOSX_DEPLOYMENT_TARGET=\${MACOSX_DEPLOYMENT_TARGET-no}
 DEF
   assert_success
   assert_output <<OUT
-CC=${TMP}/bin/gcc
+CC=${BATS_TEST_TMPDIR}/bin/gcc
 MACOSX_DEPLOYMENT_TARGET=10.9
 OUT
 
@@ -31,8 +33,8 @@ OUT
 }
 
 @test "require_gcc on OS X 10.10" {
-  for i in {1..3}; do stub uname '-s : echo Darwin'; done
-  for i in {1..2}; do stub sw_vers '-productVersion : echo 10.10'; done
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 10.10'
 
   stub gcc '--version : echo 4.2.1'
 
@@ -48,7 +50,7 @@ DEF
 
   assert_success
   assert_output <<OUT
-CC=${TMP}/bin/gcc
+CC=${BATS_TEST_TMPDIR}/bin/gcc
 MACOSX_DEPLOYMENT_TARGET=10.10
 OUT
 }
@@ -60,7 +62,7 @@ OUT
 require_gcc
 echo \$CC
 DEF
-  assert_success "${TMP}/bin/gcc"
+  assert_success "${BATS_TEST_TMPDIR}/bin/gcc"
 
   unstub gcc
 }
@@ -69,8 +71,8 @@ DEF
   mkdir -p "$INSTALL_ROOT"
   cd "$INSTALL_ROOT"
 
-  for i in {1..10}; do stub uname '-s : echo Darwin'; done
-  for i in {1..3}; do stub sw_vers '-productVersion : echo 10.10'; done
+  stub uname '-s : echo Darwin'
+  stub sw_vers '-productVersion : echo 10.10'
 
   stub cc 'false'
   stub brew 'false'
@@ -92,7 +94,7 @@ build_package_standard python
 DEF
   assert_success
   assert_output <<OUT
-./configure --prefix=$INSTALL_ROOT --enable-shared --libdir=${TMP}/install/lib
+./configure --prefix=$INSTALL_ROOT --enable-shared --libdir=${BATS_TEST_TMPDIR}/install/lib
 CC=clang
 CFLAGS=no
 make -j 2
@@ -120,6 +122,6 @@ DEF
 
     assert_success
     assert_output <<OUT
-CFLAGS_EXTRA=-DMICROPY_PY_SYS_PATH_DEFAULT='".frozen:${TMP}/install/lib/micropython"' -Wno-floating-conversion
+CFLAGS_EXTRA=-DMICROPY_PY_SYS_PATH_DEFAULT='".frozen:${BATS_TEST_TMPDIR}/install/lib/micropython"' -Wno-floating-conversion
 OUT
 }

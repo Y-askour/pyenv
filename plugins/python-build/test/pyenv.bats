@@ -1,9 +1,9 @@
 #!/usr/bin/env bats
 
 load test_helper
-export PYENV_ROOT="${TMP}/pyenv"
 
-setup() {
+_setup() {
+  export PYENV_ROOT="${BATS_TEST_TMPDIR}/pyenv"
   stub pyenv-hooks 'install : true'
   stub pyenv-rehash true
 }
@@ -18,7 +18,7 @@ stub_python_build_no_latest() {
   
 stub_python_build() {
   stub_python_build_no_latest "$@"
-  stub pyenv-latest false
+  stub pyenv-latest '-f -k * : shift 2; echo "$@"'
 }
 
 @test "install a single version" {
@@ -39,8 +39,8 @@ stub_python_build() {
   run pyenv-install 3.4.1 3.4.2
   assert_success
   assert_output <<OUT
-python-build 3.4.1 ${TMP}/pyenv/versions/3.4.1
-python-build 3.4.2 ${TMP}/pyenv/versions/3.4.2
+python-build 3.4.1 ${BATS_TEST_TMPDIR}/pyenv/versions/3.4.1
+python-build 3.4.2 ${BATS_TEST_TMPDIR}/pyenv/versions/3.4.2
 OUT
 
   unstub python-build
@@ -54,7 +54,7 @@ OUT
   run pyenv-install 3.4.1 3.4.2
   assert_failure
   assert_output <<OUT
-fail: python-build 3.4.1 ${TMP}/pyenv/versions/3.4.1
+fail: python-build 3.4.1 ${BATS_TEST_TMPDIR}/pyenv/versions/3.4.1
 OUT
 
   unstub python-build
@@ -65,9 +65,9 @@ OUT
   stub_python_build_lib
   for i in {1..3}; do stub_python_build_no_latest; done
   stub pyenv-latest \
-      '-q -k 3.4 : echo 3.4.2' \
-      '-q -k 3.5.1 : false' \
-      '-q -k 3.5 : echo 3.5.2'
+      '-r -k 3.4 : echo 3.4.2' \
+      '-r -k 3.5.1 : false' \
+      '-r -k 3.5 : echo 3.5.2'
 
   run pyenv-install 3.4 3.5.1 3.5
   assert_success <<OUT
@@ -293,10 +293,11 @@ OUT
 }
 
 @test "invalid arguments for pyenv-uninstall" {
+  bats_require_minimum_version 1.5.0
   mkdir -p "${PYENV_ROOT}/versions/3.10.3"
   mkdir -p "${PYENV_ROOT}/versions/3.10.4"
 
-  run pyenv-uninstall -f 3.10.3 --invalid-option 3.10.4
+  run -127 pyenv-uninstall -f 3.10.3 --invalid-option 3.10.4
   assert_failure
 
   assert [ -d "${PYENV_ROOT}/versions/3.10.3" ]

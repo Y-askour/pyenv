@@ -2,7 +2,7 @@
 
 load test_helper
 
-setup() {
+_setup() {
   mkdir -p "${PYENV_TEST_DIR}/myproject"
   cd "${PYENV_TEST_DIR}/myproject"
 }
@@ -37,6 +37,18 @@ setup() {
 @test "sets local version" {
   mkdir -p "${PYENV_ROOT}/versions/1.2.3"
   run pyenv-local 1.2.3
+  assert_success ""
+  assert [ "$(cat .python-version)" = "1.2.3" ]
+}
+
+@test "fails to set a nonexistent local version" {
+  run pyenv-local 1.2.3
+  assert_failure "pyenv: version \`1.2.3' not installed"
+  assert [ ! -e .python-version ]
+}
+
+@test "sets a nonexistent local version with --force" {
+  run pyenv-local -f 1.2.3
   assert_success ""
   assert [ "$(cat .python-version)" = "1.2.3" ]
 }
